@@ -66,7 +66,9 @@ wolf-prowl digest
 wolf-prowl run
 ```
 
-`run` should perform the normal end-to-end workflow: discover candidates, persist results, and generate a digest preview.
+`discover` loads enabled RSS/Atom sources, normalizes feed entries, and persists them to DuckDB with URL-based deduplication.
+
+`run` currently performs discovery. It should become the normal end-to-end workflow once digest generation exists: discover candidates, persist results, and generate a digest preview.
 
 ## Configuration
 
