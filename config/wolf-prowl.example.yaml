@@ -1,0 +1,35 @@
+# Example Wolf Prowl configuration.
+# Keep real secrets out of committed config files.
+
+database:
+  path: data/wolf_prowl.duckdb
+
+digest:
+  output_dir: digests
+  filename_template: "{date}.md"
+
+topics:
+  - name: general
+    keywords:
+      - giveaway
+      - sweepstakes
+      - contest
+      - auction
+    excluded_terms:
+      - expired
+      - closed
+
+sources:
+  - name: Example giveaway RSS feed
+    type: rss
+    url: https://example.com/giveaways.xml
+    topics:
+      - general
+    enabled: false
+
+  - name: Example auction Atom feed
+    type: atom
+    url: https://example.com/auctions.atom
+    topics:
+      - general
+    enabled: false

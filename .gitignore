@@ -1,0 +1,23 @@
+.venv/
+.local/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local runtime data
+data/
+digests/
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
