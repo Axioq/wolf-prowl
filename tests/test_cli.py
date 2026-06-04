@@ -50,3 +50,25 @@ sources:
     assert result.exit_code == 0
     assert "Discovered 1 candidates from 1 sources. Inserted 1, updated 0." in result.stdout
     assert database_path.exists()
+
+
+def test_digest_command_writes_markdown(tmp_path: Path) -> None:
+    database_path = tmp_path / "wolf_prowl.duckdb"
+    digest_dir = tmp_path / "digests"
+    config_path = tmp_path / "wolf-prowl.yaml"
+    config_path.write_text(
+        f"""
+database:
+  path: {database_path}
+digest:
+  output_dir: {digest_dir}
+  filename_template: "{{date}}.md"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(app, ["digest", "--config", str(config_path), "--date", "2026-06-04"])
+
+    assert result.exit_code == 0
+    assert "Wrote digest with 0 new discoveries" in result.stdout
+    assert (digest_dir / "2026-06-04.md").exists()

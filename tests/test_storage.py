@@ -33,3 +33,25 @@ def test_candidate_store_dedupes_by_key(tmp_path: Path) -> None:
     assert store.upsert_candidates([candidate]) == (1, 0)
     assert store.upsert_candidates([updated_candidate]) == (0, 1)
     assert store.count_candidates() == 1
+
+
+def test_candidate_store_lists_new_digest_items(tmp_path: Path) -> None:
+    store = CandidateStore(tmp_path / "wolf_prowl.duckdb")
+    candidate = Candidate(
+        title="Digest title",
+        url="https://example.com/digest",
+        source="Example feed",
+        source_url="https://example.com/feed.xml",
+        topics=("general", "auctions"),
+        description="Digest summary",
+        published_at=datetime(2026, 1, 1, tzinfo=UTC),
+        discovered_at=datetime(2026, 1, 2, tzinfo=UTC),
+        dedupe_key="https://example.com/digest",
+    )
+
+    store.upsert_candidates([candidate])
+    items = store.list_new_digest_items()
+
+    assert len(items) == 1
+    assert items[0].title == "Digest title"
+    assert items[0].topics == ("general", "auctions")

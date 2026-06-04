@@ -1,9 +1,11 @@
+from datetime import date
 from pathlib import Path
 
 import typer
 from pydantic import ValidationError
 
 from wolf_prowl.config import load_config
+from wolf_prowl.digest import write_digest
 from wolf_prowl.discovery import discover_sources
 from wolf_prowl.storage import CandidateStore
 
@@ -19,6 +21,42 @@ def main() -> None:
 @app.command()
 def discover(config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", "-c")) -> None:
     """Discover candidates from enabled RSS/Atom sources."""
+    inserted, updated, candidate_count, source_count = _discover(config)
+
+    typer.echo(
+        f"Discovered {candidate_count} candidates from {source_count} sources. "
+        f"Inserted {inserted}, updated {updated}."
+    )
+
+
+@app.command()
+def digest(
+    config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", "-c"),
+    digest_date: str | None = typer.Option(None, "--date"),
+) -> None:
+    """Generate a local Markdown digest preview."""
+    output_path, item_count = _digest(config, _parse_digest_date(digest_date))
+
+    typer.echo(f"Wrote digest with {item_count} new discoveries to {output_path}.")
+
+
+@app.command()
+def run(
+    config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", "-c"),
+    digest_date: str | None = typer.Option(None, "--date"),
+) -> None:
+    """Run the manual discovery and digest workflow."""
+    inserted, updated, candidate_count, source_count = _discover(config)
+    output_path, item_count = _digest(config, _parse_digest_date(digest_date))
+
+    typer.echo(
+        f"Discovered {candidate_count} candidates from {source_count} sources. "
+        f"Inserted {inserted}, updated {updated}."
+    )
+    typer.echo(f"Wrote digest with {item_count} new discoveries to {output_path}.")
+
+
+def _discover(config: Path) -> tuple[int, int, int, int]:
     try:
         app_config = load_config(config)
     except (FileNotFoundError, ValidationError) as error:
@@ -28,13 +66,30 @@ def discover(config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", "-c"))
     store = CandidateStore(app_config.database.path)
     inserted, updated = store.upsert_candidates(candidates)
 
-    typer.echo(
-        f"Discovered {len(candidates)} candidates from {len(app_config.enabled_sources)} sources. "
-        f"Inserted {inserted}, updated {updated}."
+    return inserted, updated, len(candidates), len(app_config.enabled_sources)
+
+
+def _digest(config: Path, digest_date: date) -> tuple[Path, int]:
+    try:
+        app_config = load_config(config)
+    except (FileNotFoundError, ValidationError) as error:
+        raise typer.BadParameter(str(error), param_hint="--config") from error
+
+    store = CandidateStore(app_config.database.path)
+    items = store.list_new_digest_items()
+    output_path = write_digest(
+        items,
+        app_config.digest.output_dir,
+        app_config.digest.filename_template,
+        digest_date,
     )
+    return output_path, len(items)
 
 
-@app.command()
-def run(config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", "-c")) -> None:
-    """Run the manual discovery and digest workflow."""
-    discover(config=config)
+def _parse_digest_date(value: str | None) -> date:
+    if value is None:
+        return date.today()
+    try:
+        return date.fromisoformat(value)
+    except ValueError as error:
+        raise typer.BadParameter("Use YYYY-MM-DD format", param_hint="--date") from error

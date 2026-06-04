@@ -3,6 +3,7 @@ from pathlib import Path
 
 import duckdb
 
+from wolf_prowl.digest import DigestItem
 from wolf_prowl.discovery import Candidate
 
 
@@ -96,6 +97,31 @@ class CandidateStore:
         with self._connect() as connection:
             result = connection.execute("select count(*) from candidates").fetchone()
         return int(result[0])
+
+    def list_new_digest_items(self) -> list[DigestItem]:
+        self.initialize()
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                select title, url, source, topics, description, published_at, discovered_at
+                from candidates
+                where status = 'new'
+                order by discovered_at desc, title asc
+                """
+            ).fetchall()
+
+        return [
+            DigestItem(
+                title=row[0],
+                url=row[1],
+                source=row[2],
+                topics=tuple(row[3] or []),
+                description=row[4],
+                published_at=row[5],
+                discovered_at=row[6],
+            )
+            for row in rows
+        ]
 
     def _connect(self) -> duckdb.DuckDBPyConnection:
         return duckdb.connect(str(self.path))
