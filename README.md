@@ -82,6 +82,8 @@ Do not store secrets in config files committed to the repository.
 
 For manual live-feed testing, copy `config/wolf-prowl.real-feeds.example.yaml` to `config/wolf-prowl.local.yaml`, enable one to three sources, and run with `--config config/wolf-prowl.local.yaml`. The local config is ignored by git.
 
+For a topic-driven example, copy `config/wolf-prowl.cycling.example.yaml` to `config/wolf-prowl.local.yaml`. It uses `source_templates` to generate Reddit RSS searches for cycling giveaways, contests, and sweepstakes.
+
 ## Docker
 
 Docker support is planned from the start so the same CLI can run locally or in a container. The first Docker image should run the manual CLI. Prefect orchestration can wrap the same command later.

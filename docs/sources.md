@@ -57,6 +57,43 @@ Start with broad public feeds only to understand real data shape. Move generally
 - Deal/community sites that expose official RSS feeds for searches, tags, or forums.
 - Public auction sites with official RSS/Atom feeds.
 
+## Topic-Driven Search Feeds
+
+Use `source_templates` when you want Wolf Prowl to generate RSS search feeds from topic keywords and opportunity terms.
+
+For example, a cycling topic can define cycling terms separately from opportunity terms:
+
+```yaml
+topics:
+  - name: cycling
+    keywords:
+      - cycling
+      - bike
+      - bicycle
+      - mountain bike
+      - gravel bike
+      - road bike
+    opportunity_terms:
+      - giveaway
+      - contest
+      - sweepstakes
+    excluded_terms:
+      - expired
+      - closed
+
+source_templates:
+  - name: Reddit search
+    type: rss
+    url_template: https://www.reddit.com/search.rss?q={query}&sort=new
+    topics: [cycling]
+    enabled: true
+    max_queries_per_topic: 8
+```
+
+This generates RSS sources for combinations such as `cycling giveaway`, `cycling contest`, `bike sweepstakes`, and `mountain bike giveaway`.
+
+Use `max_queries_per_topic` to keep broad topics from generating too many feeds.
+
 ## Example Config
 
 ```yaml

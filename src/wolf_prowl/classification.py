@@ -34,11 +34,11 @@ def _is_relevant(candidate: Candidate, topic_by_name: dict[str, TopicConfig]) ->
         if _contains_any(haystack, topic.excluded_terms):
             return False
 
-    topics_with_keywords = [topic for topic in candidate_topics if topic.keywords]
-    if not topics_with_keywords:
+    filtering_topics = [topic for topic in candidate_topics if topic.keywords or topic.opportunity_terms]
+    if not filtering_topics:
         return True
 
-    return any(_contains_any(haystack, topic.keywords) for topic in topics_with_keywords)
+    return any(_matches_topic(haystack, topic) for topic in filtering_topics)
 
 
 def _candidate_text(candidate: Candidate) -> str:
@@ -51,3 +51,12 @@ def _candidate_text(candidate: Candidate) -> str:
 
 def _contains_any(haystack: str, needles: list[str]) -> bool:
     return any(needle.lower() in haystack for needle in needles)
+
+
+def _matches_topic(haystack: str, topic: TopicConfig) -> bool:
+    keyword_match = not topic.keywords or _contains_any(haystack, topic.keywords)
+    opportunity_match = not topic.opportunity_terms or _contains_any(
+        haystack,
+        topic.opportunity_terms,
+    )
+    return keyword_match and opportunity_match

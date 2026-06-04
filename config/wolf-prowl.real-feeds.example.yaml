@@ -26,6 +26,24 @@ topics:
       - sold
       - ended
 
+  - name: cycling
+    keywords:
+      - cycling
+      - bike
+      - bicycle
+      - mountain bike
+      - gravel bike
+      - road bike
+    opportunity_terms:
+      - giveaway
+      - contest
+      - sweepstakes
+    excluded_terms:
+      - expired
+      - closed
+      - sold
+      - ended
+
 sources:
   - name: Reddit giveaway search
     type: rss
@@ -47,3 +65,12 @@ sources:
     topics:
       - auctions
     enabled: false
+
+source_templates:
+  - name: Reddit generated search
+    type: rss
+    url_template: https://www.reddit.com/search.rss?q={query}&sort=new
+    topics:
+      - cycling
+    enabled: false
+    max_queries_per_topic: 8

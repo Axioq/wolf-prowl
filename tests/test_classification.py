@@ -28,6 +28,26 @@ def test_filter_relevant_candidates_drops_excluded_terms() -> None:
     assert result.filtered_count == 1
 
 
+def test_filter_relevant_candidates_requires_opportunity_terms_when_configured() -> None:
+    candidates = [
+        _candidate(title="Mountain bike maintenance tips", description="No prize here"),
+        _candidate(title="Mountain bike giveaway", description="Enter today"),
+    ]
+    topics = [
+        TopicConfig(
+            name="giveaways",
+            keywords=["bike"],
+            opportunity_terms=["giveaway", "contest"],
+            excluded_terms=[],
+        )
+    ]
+
+    result = filter_relevant_candidates(candidates, topics)
+
+    assert result.candidates == [candidates[1]]
+    assert result.filtered_count == 1
+
+
 def test_filter_relevant_candidates_keeps_unknown_topics() -> None:
     candidate = _candidate(title="Unknown topic item", description=None, topics=("missing",))
 
