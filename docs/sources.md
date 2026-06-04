@@ -30,6 +30,33 @@ Useful places to look for RSS/Atom feeds:
 
 Avoid scraping search result pages in the first version. If search APIs are added later, document the provider, cost, rate limits, API key handling, and terms of use here before implementation.
 
+## Live Feed Testing
+
+Use live feeds manually, not in automated tests. Automated tests should keep using fake feed data so they stay repeatable and do not depend on external sites.
+
+For manual testing, copy the real-feed example config and enable one to three feeds at a time:
+
+```bash
+cp config/wolf-prowl.real-feeds.example.yaml config/wolf-prowl.local.yaml
+```
+
+Then edit `config/wolf-prowl.local.yaml`, set selected sources to `enabled: true`, and run:
+
+```bash
+.local/bin/uv run wolf-prowl run --config config/wolf-prowl.local.yaml
+```
+
+`config/wolf-prowl.local.yaml`, `data/`, and `digests/` are ignored by git.
+
+Start with broad public feeds only to understand real data shape. Move generally useful source patterns into this file once they prove useful.
+
+## Candidate Public Feed Patterns
+
+- Reddit RSS search feeds such as `https://www.reddit.com/search.rss?q=giveaway&sort=new`.
+- Reddit RSS search feeds for `sweepstakes`, `contest`, or `auction`.
+- Deal/community sites that expose official RSS feeds for searches, tags, or forums.
+- Public auction sites with official RSS/Atom feeds.
+
 ## Example Config
 
 ```yaml

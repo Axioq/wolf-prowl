@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html import unescape
+from html.parser import HTMLParser
+import re
 from time import struct_time
 from typing import Any
 
@@ -21,8 +24,27 @@ class Candidate:
     dedupe_key: str
 
 
+@dataclass(frozen=True)
+class SourceError:
+    source: str
+    source_url: str
+    message: str
+
+
+@dataclass(frozen=True)
+class DiscoveryRun:
+    candidates: list[Candidate]
+    source_count: int
+    errors: list[SourceError]
+
+
 def discover_feed(source: SourceConfig) -> list[Candidate]:
     feed = feedparser.parse(str(source.url))
+    if feed.get("bozo"):
+        exception = feed.get("bozo_exception")
+        message = str(exception) if exception else "Feed parser reported malformed content"
+        raise ValueError(message)
+
     discovered_at = datetime.now(UTC)
 
     candidates: list[Candidate] = []
@@ -32,7 +54,9 @@ def discover_feed(source: SourceConfig) -> list[Candidate]:
             continue
 
         title = _entry_text(entry, "title") or url
-        description = _entry_text(entry, "summary") or _entry_text(entry, "description")
+        description = _clean_description(
+            _entry_text(entry, "summary") or _entry_text(entry, "description")
+        )
         candidates.append(
             Candidate(
                 title=title,
@@ -50,11 +74,22 @@ def discover_feed(source: SourceConfig) -> list[Candidate]:
     return candidates
 
 
-def discover_sources(sources: list[SourceConfig]) -> list[Candidate]:
+def discover_sources(sources: list[SourceConfig]) -> DiscoveryRun:
     candidates: list[Candidate] = []
+    errors: list[SourceError] = []
     for source in sources:
-        candidates.extend(discover_feed(source))
-    return candidates
+        try:
+            candidates.extend(discover_feed(source))
+        except Exception as error:
+            errors.append(
+                SourceError(
+                    source=source.name,
+                    source_url=str(source.url),
+                    message=str(error),
+                )
+            )
+
+    return DiscoveryRun(candidates=candidates, source_count=len(sources), errors=errors)
 
 
 def _entry_url(entry: dict[str, Any]) -> str | None:
@@ -91,3 +126,26 @@ def _entry_published_at(entry: dict[str, Any]) -> datetime | None:
 
 def _canonical_url(url: str) -> str:
     return url.strip()
+
+
+def _clean_description(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    parser = _TextExtractor()
+    parser.feed(value)
+    text = unescape(parser.text())
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or None
+
+
+class _TextExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self._parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self._parts.append(data)
+
+    def text(self) -> str:
+        return " ".join(self._parts)

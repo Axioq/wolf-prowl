@@ -8,6 +8,7 @@ __pycache__/
 # Local runtime data
 data/
 digests/
+config/wolf-prowl.local.yaml
 *.duckdb
 *.duckdb.wal
 *.duckdb.tmp

@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
+MAX_DESCRIPTION_LENGTH = 800
+
 
 @dataclass(frozen=True)
 class DigestItem:
@@ -50,7 +52,7 @@ def _render_item(item: DigestItem) -> list[str]:
     lines.append("")
 
     if item.description:
-        lines.append(item.description.strip())
+        lines.append(_format_description(item.description))
         lines.append("")
 
     return lines
@@ -66,3 +68,10 @@ def _format_datetime(value: datetime | None) -> str:
     if value is None:
         return "unknown"
     return value.date().isoformat()
+
+
+def _format_description(value: str) -> str:
+    description = value.strip()
+    if len(description) <= MAX_DESCRIPTION_LENGTH:
+        return description
+    return f"{description[: MAX_DESCRIPTION_LENGTH - 3].rstrip()}..."

@@ -66,7 +66,7 @@ wolf-prowl digest
 wolf-prowl run
 ```
 
-`discover` loads enabled RSS/Atom sources, normalizes feed entries, and persists them to DuckDB with URL-based deduplication.
+`discover` loads enabled RSS/Atom sources, normalizes feed entries, filters them with configured topic keywords and excluded terms, and persists them to DuckDB with URL-based deduplication.
 
 `digest` generates a local Markdown preview from stored candidates with `status = 'new'`.
 
@@ -79,6 +79,8 @@ Use `--date YYYY-MM-DD` with `digest` or `run` when you want a deterministic out
 Start from `config/wolf-prowl.example.yaml` and create a local config when the implementation needs real feeds.
 
 Do not store secrets in config files committed to the repository.
+
+For manual live-feed testing, copy `config/wolf-prowl.real-feeds.example.yaml` to `config/wolf-prowl.local.yaml`, enable one to three sources, and run with `--config config/wolf-prowl.local.yaml`. The local config is ignored by git.
 
 ## Docker
 

@@ -38,3 +38,23 @@ def test_write_digest_creates_markdown_file(tmp_path: Path) -> None:
         "## New Discoveries\n\n"
         "No new discoveries.\n"
     )
+
+
+def test_render_digest_truncates_long_descriptions() -> None:
+    markdown = render_digest(
+        [
+            DigestItem(
+                title="Contest title",
+                url="https://example.com/contest",
+                source="Example feed",
+                topics=("general",),
+                description="x" * 900,
+                published_at=None,
+                discovered_at=datetime(2026, 1, 2),
+            )
+        ],
+        date(2026, 6, 4),
+    )
+
+    assert f"{'x' * 797}..." in markdown
+    assert "x" * 900 not in markdown

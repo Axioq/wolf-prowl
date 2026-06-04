@@ -4,7 +4,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from wolf_prowl.cli import app
-from wolf_prowl.discovery import Candidate
+from wolf_prowl.discovery import Candidate, DiscoveryRun, SourceError
 
 
 def test_discover_command_loads_config_and_persists_candidates(
@@ -17,6 +17,10 @@ def test_discover_command_loads_config_and_persists_candidates(
         f"""
 database:
   path: {database_path}
+topics:
+  - name: general
+    keywords: [contest]
+    excluded_terms: []
 sources:
   - name: Enabled feed
     type: rss
@@ -29,27 +33,75 @@ sources:
 
     def discover_fake_sources(sources):
         assert len(sources) == 1
-        return [
-            Candidate(
-                title="Contest title",
-                url="https://example.com/contest",
-                source="Enabled feed",
-                source_url="https://example.com/feed.xml",
-                topics=("general",),
-                description="Contest summary",
-                published_at=None,
-                discovered_at=datetime.now(UTC),
-                dedupe_key="https://example.com/contest",
-            )
-        ]
+        return DiscoveryRun(
+            candidates=[
+                Candidate(
+                    title="Contest title",
+                    url="https://example.com/contest",
+                    source="Enabled feed",
+                    source_url="https://example.com/feed.xml",
+                    topics=("general",),
+                    description="Contest summary",
+                    published_at=None,
+                    discovered_at=datetime.now(UTC),
+                    dedupe_key="https://example.com/contest",
+                )
+            ],
+            source_count=1,
+            errors=[],
+        )
 
     monkeypatch.setattr("wolf_prowl.cli.discover_sources", discover_fake_sources)
 
     result = CliRunner().invoke(app, ["discover", "--config", str(config_path)])
 
     assert result.exit_code == 0
-    assert "Discovered 1 candidates from 1 sources. Inserted 1, updated 0." in result.stdout
+    assert "Discovered 1 candidates from 1 sources. Filtered 0. Inserted 1, updated 0." in result.stdout
     assert database_path.exists()
+
+
+def test_discover_command_reports_source_errors(monkeypatch, tmp_path: Path) -> None:
+    database_path = tmp_path / "wolf_prowl.duckdb"
+    config_path = tmp_path / "wolf-prowl.yaml"
+    config_path.write_text(
+        f"""
+database:
+  path: {database_path}
+topics:
+  - name: general
+    keywords: [contest]
+    excluded_terms: []
+sources:
+  - name: Broken feed
+    type: rss
+    url: https://example.com/broken.xml
+    topics: [general]
+    enabled: true
+""".strip(),
+        encoding="utf-8",
+    )
+
+    def discover_fake_sources(sources):
+        assert len(sources) == 1
+        return DiscoveryRun(
+            candidates=[],
+            source_count=1,
+            errors=[
+                SourceError(
+                    source="Broken feed",
+                    source_url="https://example.com/broken.xml",
+                    message="bad feed",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("wolf_prowl.cli.discover_sources", discover_fake_sources)
+
+    result = CliRunner().invoke(app, ["discover", "--config", str(config_path)])
+
+    assert result.exit_code == 0
+    assert "Discovered 0 candidates from 1 sources. Filtered 0. Inserted 0, updated 0." in result.stdout
+    assert "Source error: Broken feed: bad feed" in result.stderr
 
 
 def test_digest_command_writes_markdown(tmp_path: Path) -> None:

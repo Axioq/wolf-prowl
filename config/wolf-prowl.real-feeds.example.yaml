@@ -1,0 +1,49 @@
+# Copy this file to config/wolf-prowl.local.yaml for manual live-feed testing.
+# Keep local changes and personal source lists out of git.
+
+database:
+  path: data/wolf_prowl.duckdb
+
+digest:
+  output_dir: digests
+  filename_template: "{date}.md"
+
+topics:
+  - name: giveaways
+    keywords:
+      - giveaway
+      - sweepstakes
+      - contest
+    excluded_terms:
+      - expired
+      - closed
+
+  - name: auctions
+    keywords:
+      - auction
+      - surplus
+    excluded_terms:
+      - sold
+      - ended
+
+sources:
+  - name: Reddit giveaway search
+    type: rss
+    url: https://www.reddit.com/search.rss?q=giveaway&sort=new
+    topics:
+      - giveaways
+    enabled: false
+
+  - name: Reddit sweepstakes search
+    type: rss
+    url: https://www.reddit.com/search.rss?q=sweepstakes&sort=new
+    topics:
+      - giveaways
+    enabled: false
+
+  - name: Reddit auction search
+    type: rss
+    url: https://www.reddit.com/search.rss?q=auction&sort=new
+    topics:
+      - auctions
+    enabled: false
